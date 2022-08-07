@@ -1,40 +1,42 @@
-import React from "react";
+import React, { useState } from "react";
 import XMLData from "./products.xml";
-import axios from "axios";
-import { useState } from "react";
 import XMLParser from "react-xml-parser";
 
 const XMLRender = () => {
+  const [data, setData] = useState([]);
 
-  const [data, setData] = useState({});
-  const [names, setNames] = useState({})
-
-  React.useEffect(() => {
-    axios
-      .get(XMLData, {
-        "Content-Type": "application/xml; charset=utf-8"
-      })
+  React.useEffect(() => { 
+    fetch(XMLData, {
+      "Content-Type": "application/xml"
+    })
+      .then((response) => response.text())
       .then((response) => {
-        setData(new XMLParser().parseFromString(response.data));
+        const parsedData = new XMLParser().parseFromString(response); 
+
+        setData(parsedData.getElementsByTagName("item")); 
+      })
+      .catch((error) => {
+        console.log("Error fetching/parsing XML data", error);  
       });
   }, []);
 
-  if (data.children) { 
-    const info = data.children[0].children.map((items) => {  
-      console.log(items.attributes.name);
-      return {
-        totalItems: items.children.length, 
-        name: items.attributes.name,
-      }
-    }) 
-    console.log(info) 
-  }
-
+  const renderRow = React.useCallback(  
+    ({ attributes }) => (
+      <div 
+        className="info-display__item"
+        key={`${attributes.code}_${attributes.name}`} 
+      >
+        {attributes.name} 
+      </div>
+    ),
+    []
+  );
 
   return (
-    <div>
-      
+    <div className="info-display">
+      <strong>{`Results total: ${data.length}`}</strong>  
+      {data.length !== 0 && data.map(renderRow)} 
     </div>
-  )
+  );
 };
 export default XMLRender;
